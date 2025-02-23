@@ -117,7 +117,9 @@ assign ONOP =
   // PAUL G
   // ATOMIC INCREMENT 
   `DECODE(`OP(-1), `OP(34), 600) // if there is a 34 in the OP field then goto case 600
-
+ // Carlos B
+ // RAND8 instruction: op = 0, funct = 1
+  `DECODE(`OP(-1)+`FUNCT(-1), `FUNCT(1), 700)
 
   // end of JUMPonop decode options
   
@@ -186,6 +188,55 @@ always @(posedge clk) begin
       608: begin end
       609: begin end
       610: begin end
+
+  // Carlos Borge
+  //RAND8 Instruction: rand8 $rd, $rs  --> rd = (13*rs)%256
+      700: begin
+              `CONST(3) `Yin `NEXT         // Load constant 3 into Y for shift left by 3
+           end
+      701: begin
+              `SELrs `REGout `ALUsll `ALUZin `NEXT  // Compute (rs << 3); ALUZ = rs << 3
+           end
+      702: begin
+              `ALUZout `SELrd `REGin `NEXT         // Save term1 (rs << 3) into destination ($rd)
+           end
+      703: begin
+              `CONST(2) `Yin `NEXT         // Load constant 2 into Y for shift left by 2
+           end
+      704: begin
+              `SELrs `REGout `ALUsll `ALUZin `NEXT  // Compute (rs << 2); ALUZ = rs << 2
+           end
+      705: begin
+              `SELrd `REGout `Yin `NEXT         // Load current rd (term1) into Y
+           end
+      706: begin
+              `ALUZout `ALUadd `ALUZin `NEXT      // Add: (rs << 3) + (rs << 2); ALUZ = term1 + term2
+           end
+      707: begin
+              `ALUZout `SELrd `REGin `NEXT         // Save sum (12*rs) into rd
+           end
+      708: begin
+              `SELrd `REGout `Yin `NEXT         // Load current rd (12*rs) into Y
+           end
+      709: begin
+              `SELrs `REGout `ALUadd `ALUZin `NEXT  // Add rs: 12*rs + rs = 13*rs; ALUZ = 13*rs
+           end
+      710: begin
+              `ALUZout `SELrd `REGin `NEXT         // Save result (13*rs) into rd
+           end
+      711: begin
+              `CONST(8'hFF) `Yin `NEXT         // Load mask 0xFF into Y
+           end
+      712: begin
+              `SELrd `REGout `ALUand `ALUZin `NEXT  // Compute (13*rs) & 0xFF; ALUZ = final 8-bit result
+           end
+      713: begin
+              `ALUZout `SELrd `REGin `JUMP(0)      // Write final result into rd and return to fetch
+           end
+
+
+
+	    
    // PAUL G
    // Atomic Increment Instruction
       500: begin end 
